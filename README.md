@@ -21,17 +21,16 @@ A FastAPI service backed by PostgreSQL for tracking incidents, with a Reddit RSS
    cp .env.example .env
    ```
 
-   The defaults work out of the box for local development:
+   The template works out of the box for local development:
 
    ```ini
    POSTGRES_USER=incident
-   POSTGRES_PASSWORD=incident
+   POSTGRES_PASSWORD=changeme
    POSTGRES_DB=incidents
-   DATABASE_URL=postgresql+psycopg://incident:incident@db:5432/incidents
+   DATABASE_URL=postgresql+psycopg://incident:changeme@db:5432/incidents
    ```
 
-   > The `DATABASE_URL` host is `db` (the Compose service name), not `localhost` —
-   > inside the Docker network the app reaches Postgres by service name.
+   > Change `POSTGRES_PASSWORD` if you would like
 
 2. **Build and start the stack:**
 
@@ -83,7 +82,7 @@ to run just the database in Docker and the API on your host.
 
    ```bash
    pip install -r requirements.txt
-   DATABASE_URL=postgresql+psycopg://incident:incident@localhost:5432/incidents \
+   DATABASE_URL=postgresql+psycopg://incident:changeme@localhost:5432/incidents \
      uvicorn backend.main:app --reload
    ```
 
@@ -108,5 +107,3 @@ All configuration is via environment variables (see `.env.example`):
 | `POSTGRES_PASSWORD` | Postgres password                                |
 | `POSTGRES_DB`       | Database name                                    |
 | `DATABASE_URL`      | SQLAlchemy connection string used by the API     |
-
-`.env` is gitignored — never commit real credentials.
