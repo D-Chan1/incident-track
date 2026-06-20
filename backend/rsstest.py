@@ -5,12 +5,12 @@ from pprint import pprint
 
 KEYWORDS = ["girl","black", "feel"]
 
-feed_url = "https://www.reddit.com/r/polyphia/new/.rss"
+# feed_url = "https://www.reddit.com/r/polyphia/new/.rss"
 
 
 
 SUBREDDITS = [
-    "https://www.reddit.com/r/polyphia/new/.rss"
+    "https://www.reddit.com/r/polyphia/new/"
 ]
 def extract_post_text(summary_html):
     soup = BeautifulSoup(summary_html, "html.parser")
@@ -21,6 +21,7 @@ def extract_post_text(summary_html):
 
 
 def scrape_subreddit(url):
+    url = url.rstrip("/") + "/.rss"
     feed = feedparser.parse(url)
     results = []
 
