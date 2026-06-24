@@ -1,17 +1,14 @@
 import feedparser
 import requests
 from bs4 import BeautifulSoup
-from pprint import pprint
 from datetime import datetime
 from zoneinfo import ZoneInfo
 import psycopg2
-import os
-from dotenv import load_dotenv
-from dotenv import find_dotenv
-print(find_dotenv())
-load_dotenv()
+from database import SessionLocal
+from models import Post
 
-KEYWORDS = []
+db = SessionLocal()
+KEYWORDS = ['can','you','help']
 
 SUBREDDITS = [
     "https://www.reddit.com/r/polyphia/new/"
@@ -47,7 +44,7 @@ def scrape_subreddit(url: str, key_words: list[str] )->list[dict]:
 
     for entry in feed.entries: 
         # Strip HTML tags from body
-        raw_html = str(entry.get("summary", "*No Body Text*"))
+        raw_html = str(entry.get("summary", ""))
         # plain_text = BeautifulSoup(raw_html, "html.parser").get_text(separator=" ").strip() then i wouldn't need the helper function extract_post_text maybe?
         plain_text = extract_post_text(raw_html) # get the body text
 
@@ -56,10 +53,10 @@ def scrape_subreddit(url: str, key_words: list[str] )->list[dict]:
 
         post_info = {
                 "id": entry.get("id", entry.link),
-                "subreddit": "r/" + url.split("/r/")[1].split("/")[0],
                 "title": entry.title,
-                "text": plain_text,
+                "body": plain_text,
                 "url": entry.link,
+                "subreddit": "r/" + url.split("/r/")[1].split("/")[0],
                 "author": entry.get('author', 'unknown'),
                 "published": entry.published,
                 "ET_time": iso_to_et(str(entry.published)),
@@ -69,7 +66,7 @@ def scrape_subreddit(url: str, key_words: list[str] )->list[dict]:
             results.append(post_info)
     return results
 
-# Test
+# print all matching post in summary form
 all_posts = []
 for url in SUBREDDITS:
     # go thru each subreddit, collect matched posts and add to list that contains posts from all subreddits
@@ -77,73 +74,34 @@ for url in SUBREDDITS:
     all_posts.extend(posts)
     print(f"{url}: {len(posts)} matching posts found") 
 
-for p in all_posts:
-    print(f"\n[{', '.join(p['matched_keywords'])}] {p['subreddit']} {p['title']}")
-    print(f"  by {p['author']} — {p['published']} - {p['ET_time']}")
-    print(f"  {p['text'][:]}")
-    print(f"  {p['url']}")
+# testing database insertion, currently buggin out.
+testdic = all_posts[0]
+print(testdic)
 
-# DB_CONFIG = {
-#     "host": os.getenv("DB_HOST"),
-#     "port": os.getenv("DB_PORT"),
-#     "dbname": os.getenv("DB_NAME"),
-#     "user": os.getenv("DB_USER"),
-#     "password": os.getenv("DB_PASS"),
-# }
-# DB_HOST = os.environ["DB_HOST"]
-# DB_PORT = os.environ['DB_PORT']
-# DB_NAME = os.environ['DB_NAME']
-# DB_USER = os.environ['DB_USER']
-# DB_PASS = os.environ['DB_PASS']
+# create Post object for insertion into Post table with post info as dictionariy
+def create_post_from_dict(db, post_dict: dict):
+    post = Post(id=post_dict['id'], title=post_dict['title'], body=post_dict['body']
+                , url=post_dict['url'], subreddit=post_dict['subreddit'], author=post_dict['author'], published=datetime.fromisoformat(post_dict['published'])
+    )
+    return post
+
+# post object to test inserion
+testpost = create_post_from_dict(db, testdic)
+
+db.add(testpost)
+db.commit()
+db.refresh(testpost)
+print('\n\n')
+
+# test to see if insertion worked, currently doesn't work if running rsstest.py in terminal
+retrieved = db.query(Post).all()
+for r in retrieved:
+    print(vars(r))
 
 
-# def get_connection():
-#     # return psycopg2.connect(**DB_CONFIG)
-#      return psycopg2.connect(
-#         host=DB_HOST,
-#         port=DB_PORT,
-#         dbname=DB_NAME,
-#         user=DB_USER,
-#         password=DB_PASS)
-# def save_posts(conn, posts: list[dict]) -> int:
-#     new_count = 0
-#     with conn.cursor() as cur:
-#         for post in posts:
-#             cur.execute("""
-#                 INSERT INTO posts
-#                 (id, subreddit, title, text, url, author, published, matched_keywords)
-#                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-#                 ON CONFLICT (id) DO NOTHING
-#             """, (
-#                 post["id"], post["subreddit"], post["title"], post["text"],
-#                 post["url"], post["author"], post["published"],
-#                 post["matched_keywords"],
-#             ))
-#             if cur.rowcount > 0:
-#                 new_count += 1
-#     conn.commit()
-#     return new_count
+# for p in all_posts:
+#     print(f"\n[{', '.join(p['matched_keywords'])}] {p['subreddit']} {p['title']}")
+#     print(f"  by {p['author']} — {p['published']} - {p['ET_time']}")
+#     print(f"  {p['body'][:]}")
+#     print(f"  {p['url']}")
 
-# conn = get_connection()
-# new_count = save_posts(conn, all_posts)
-# print(f"Saved {new_count} new posts to the database")
-# conn.close()
-# interesting_posts = []
-
-# for post in feed.entries:
-#     title = post.title.lower()
-
-#     if any(word in title for word in KEYWORDS):
-#         interesting_posts.append(post)
-
-#         print("MATCH:", post.title)
-#         print(post.link)
-#         print()
-
-# post1 = feed.entries[0]
-# pprint(post1)
-# for post in feed.entries:
-#     print("TITLE:", post.title)
-#     print("LINK:", post.link)
-#     print("DATE:", post.published)
-#     print("-" * 50)
