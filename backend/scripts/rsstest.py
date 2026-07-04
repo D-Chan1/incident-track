@@ -4,11 +4,11 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 from zoneinfo import ZoneInfo
 import psycopg2
-from database import SessionLocal
-from models import Post
+from app.database import SessionLocal
+from app.models import Post, Test
+from app.services.reddit import add_post
 
-db = SessionLocal()
-KEYWORDS = ['can','you','help']
+KEYWORDS = ['milan']
 
 SUBREDDITS = [
     "https://www.reddit.com/r/polyphia/new/"
@@ -29,9 +29,8 @@ def extract_post_text(summary_html: str)->str:
     
     return ""  # div is None, meaning it's a post with no body text
 
-
 def scrape_subreddit(url: str, key_words: list[str] )->list[dict]:
-    """Return summaries of posts from given subreddit feed url filtered by key_words. 
+    """Return list of dict info of posts from given subreddit feed url filtered by key_words. 
     If key_words is empty, return all possible posts.
 
     Precondition: url must not be changed, url must be to a subreddit feed
@@ -52,7 +51,7 @@ def scrape_subreddit(url: str, key_words: list[str] )->list[dict]:
         matched = [kw for kw in key_words if kw in combined] # ie. matched = [].  for kw in keywords, if kw in combined, matched.append(kw)
 
         post_info = {
-                "id": entry.get("id", entry.link),
+                "id": str(entry.get("id")).split('/')[-1],
                 "title": entry.title,
                 "body": plain_text,
                 "url": entry.link,
@@ -74,31 +73,43 @@ for url in SUBREDDITS:
     all_posts.extend(posts)
     print(f"{url}: {len(posts)} matching posts found") 
 
-# testing database insertion, currently buggin out.
+
 testdic = all_posts[0]
 print(testdic)
 
 # create Post object for insertion into Post table with post info as dictionariy
-def create_post_from_dict(db, post_dict: dict):
+def create_post_from_dict(post_dict: dict):
     post = Post(id=post_dict['id'], title=post_dict['title'], body=post_dict['body']
                 , url=post_dict['url'], subreddit=post_dict['subreddit'], author=post_dict['author'], published=datetime.fromisoformat(post_dict['published'])
     )
+
     return post
 
-# post object to test inserion
-testpost = create_post_from_dict(db, testdic)
 
-db.add(testpost)
-db.commit()
-db.refresh(testpost)
+
+# post object to test inserion
+testpost = create_post_from_dict(testdic)
+
+with SessionLocal() as db:
+    saved = 0
+    skipped = 0
+    for post_dict in all_posts:
+        post = create_post_from_dict(post_dict)
+        if add_post(db, post):
+            saved+=1
+        else:
+            skipped+=1
+    db.commit()
+    
+
 print('\n\n')
 
+
 # test to see if insertion worked, currently doesn't work if running rsstest.py in terminal
-retrieved = db.query(Post).all()
-for r in retrieved:
-    print(vars(r))
+# retrieved = db.query(Post).all()
+# print(retrieved)
 
-
+# print("\n --------ALL POSTS-------\n ---------\n")
 # for p in all_posts:
 #     print(f"\n[{', '.join(p['matched_keywords'])}] {p['subreddit']} {p['title']}")
 #     print(f"  by {p['author']} — {p['published']} - {p['ET_time']}")

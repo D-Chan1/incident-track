@@ -1,9 +1,9 @@
 from datetime import datetime
 
-from sqlalchemy import Integer, String, Text, DateTime, Table, Column, ForeignKey, ARRAY
+from sqlalchemy import Integer, String, Text, DateTime, Table, Column, ForeignKey#, ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from database import Base
+from app.database import Base
 
 # creates incidents table
 class Incident(Base):
@@ -14,15 +14,15 @@ class Incident(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
-# post_keywords = Table(
-#     "post_keywords", Base.metadata,
-#     Column(
-#         'post_id', ForeignKey('posts.id'), primary_key=True
-#     ),
-#     Column(
-#         'keyword_id', ForeignKey('keywords.id'), primary_key=True
-#     )
-# )
+post_keywords = Table(
+    "post_keywords", Base.metadata,
+    Column(
+        'post_id', ForeignKey('posts.id'), primary_key=True
+    ),
+    Column(
+        'keyword_id', ForeignKey('keywords.id'), primary_key=True
+    )
+)
 class Post(Base):
     __tablename__ = "posts"
     
@@ -34,14 +34,18 @@ class Post(Base):
     author: Mapped[str] = mapped_column(String)
     published: Mapped[datetime] = mapped_column(DateTime, index=True)
     
-    keywords: Mapped[ARRAY]= mapped_column(ARRAY)
-
+    # keywords: Mapped[ARRAY]= mapped_column(ARRAY)
+    # keywords = relationship("Keyword", secondary=post_keywords, back_populates = 'posts')
  
+class Test(Base):
+    __tablename__ = 'tests'
+    id: Mapped[int] = mapped_column(primary_key=True)
+    word: Mapped[str] = mapped_column()
 
-# class Keyword(Base):
-#     __tablename__ = 'keywords'
+class Keyword(Base):
+    __tablename__ = 'keywords'
 
-#     id:Mapped[int] = mapped_column(primary_key=True)
-#     name:Mapped[str] = mapped_column(unique=True, index=True)
+    id:Mapped[int] = mapped_column(primary_key=True)
+    name:Mapped[str] = mapped_column(unique=True, index=True)
 
-#     posts = relationship("Post", secondary=post_keywords, back_populates='keywords')
+    # posts = relationship("Post", secondary=post_keywords, back_populates='keywords')

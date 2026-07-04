@@ -2,8 +2,8 @@ from fastapi import FastAPI, Depends
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from database import engine, Base, get_db
-import models
+from app.database import engine, Base, get_db
+import app.models as models
 
 Base.metadata.create_all(bind=engine)
 
@@ -19,3 +19,9 @@ def root():
 @app.get("/incidents")
 def get_incidents(db: Session = Depends(get_db)):
     return db.scalars(select(models.Incident)).all()
+@app.get("/posts")
+def get_posts(db: Session = Depends(get_db)):
+    return db.scalars(select(models.Post)).all()
+@app.get("/tests")
+def get_tests(db: Session = Depends(get_db)):
+    return db.scalars(select(models.Test)).all() 
