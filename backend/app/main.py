@@ -2,8 +2,8 @@ from fastapi import FastAPI, Depends
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.database import engine, Base, get_db
-import app.models as models
+from backend.app.database import engine, Base, get_db
+import backend.app.models as models
 
 Base.metadata.create_all(bind=engine)
 
