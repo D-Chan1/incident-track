@@ -12,7 +12,7 @@ class Incident(Base):
     id: Mapped[str] = mapped_column(Integer, primary_key=True)
     title: Mapped[str] = mapped_column(String(300))
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    published: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 post_keywords = Table(
     "post_keywords", Base.metadata,
@@ -37,10 +37,6 @@ class Post(Base):
     # keywords: Mapped[ARRAY]= mapped_column(ARRAY)
     # keywords = relationship("Keyword", secondary=post_keywords, back_populates = 'posts')
  
-class Test(Base):
-    __tablename__ = 'tests'
-    id: Mapped[int] = mapped_column(primary_key=True)
-    word: Mapped[str] = mapped_column()
 
 class Keyword(Base):
     __tablename__ = 'keywords'
